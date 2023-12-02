@@ -6,27 +6,47 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
 
 var counter int
+var mapOfNumbers = map[string]int{
+	"one":   1,
+	"two":   2,
+	"three": 3,
+	"four":  4,
+	"five":  5,
+	"six":   6,
+	"seven": 7,
+	"eight": 8,
+	"nine":  9,
+}
 
 func main() {
 	start := time.Now()
 	fmt.Println("Hello, AoC! - day: 1")
-	file := "/Users/arturfigiel/go/aoc2023/1/input.txt"
+
+	dir, err := os.Getwd()
+	if err != nil {
+		fmt.Println("error getting working directory:", err)
+		return
+	}
+
+	scratcherFolderPath := fmt.Sprintf("%s/%s", dir, "1")
+	inputFilePath := scratcherFolderPath + "/" + "input.txt"
 
 	lines := make(chan string)
 	processedLines := make(chan int)
 	var wg sync.WaitGroup
-	go readLines(file, lines)
+	go readLines(inputFilePath, lines)
 
-	workers := 20
+	workers := 10
 	wg.Add(workers)
 
 	for i := 0; i < workers; i++ {
-		go processLines(i, lines, processedLines, &wg)
+		go processLines(lines, processedLines, &wg)
 	}
 
 	go func() {
@@ -43,18 +63,58 @@ func main() {
 	fmt.Println("Execution time: ", end.Sub(start))
 }
 
-func processLines(workerID int, lines <-chan string, processedLines chan<- int, wg *sync.WaitGroup) {
+func processLines(lines <-chan string, processedLines chan<- int, wg *sync.WaitGroup) {
 	defer wg.Done()
 	var num int
 	var err error
 
-	fmt.Println("Worker", workerID, "started")
 	for line := range lines {
 		strNumber := ""
 
-		for _, v := range line {
+		// get first number
+		for i, v := range line {
 			if byte(v) >= byte('0') && byte(v) <= byte('9') {
 				strNumber += string(v)
+				break
+			} else {
+				// check if it contains any of the words from numbers map
+				for strNum, _ := range mapOfNumbers {
+					if len(line[i:]) > len(strNum) {
+						if strings.Contains(line[i:i+len(strNum)], strNum) == true {
+							strNumber += strconv.Itoa(mapOfNumbers[strNum])
+							break
+						}
+					}
+				}
+			}
+
+			if len(strNumber) == 1 {
+				break
+			}
+		}
+
+		// get last number
+		reversedline := reverseStr(line)
+		for i, v := range reversedline {
+			if byte(v) >= byte('0') && byte(v) <= byte('9') {
+				strNumber += string(v)
+				break
+			} else {
+				// check if it contains any of the words from numbers map
+				for strNum, _ := range mapOfNumbers {
+					if len(reversedline[i:]) > len(strNum) {
+						rs := reverseStr(strNum)
+						part := reversedline[i : i+len(rs)]
+						if part == rs {
+							strNumber += strconv.Itoa(mapOfNumbers[strNum])
+							break
+						}
+					}
+				}
+			}
+
+			if len(strNumber) == 2 {
+				break
 			}
 		}
 
@@ -89,4 +149,14 @@ func readLines(filePath string, output chan<- string) {
 	}
 
 	close(output)
+}
+
+func reverseStr(str string) string {
+	var result string
+
+	for _, v := range str {
+		result = string(v) + result
+	}
+
+	return result
 }
