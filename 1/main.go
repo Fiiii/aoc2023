@@ -6,29 +6,52 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"sync"
 	"time"
 )
+
+var counter int
 
 func main() {
 	start := time.Now()
 	fmt.Println("Hello, AoC! - day: 1")
+	file := "/Users/arturfigiel/go/aoc2023/1/input.txt"
 
-	file, err := os.Open("/Users/arturfigiel/go/aoc2023/1/input.txt")
-	if err != nil {
-		log.Fatal(err)
+	lines := make(chan string)
+	processedLines := make(chan int)
+	var wg sync.WaitGroup
+	go readLines(file, lines)
+
+	workers := 20
+	wg.Add(workers)
+
+	for i := 0; i < workers; i++ {
+		go processLines(i, lines, processedLines, &wg)
 	}
-	defer file.Close()
-	scanner := bufio.NewScanner(file)
 
-	var counter int
-	var strNumber string
+	go func() {
+		wg.Wait()
+		close(processedLines)
+	}()
+
+	for num := range processedLines {
+		counter += num
+	}
+
+	end := time.Now()
+	fmt.Println("Counter:", counter)
+	fmt.Println("Execution time: ", end.Sub(start))
+}
+
+func processLines(workerID int, lines <-chan string, processedLines chan<- int, wg *sync.WaitGroup) {
+	defer wg.Done()
 	var num int
+	var err error
 
-	for scanner.Scan() {
-		strNumber = ""
-		num = 0
+	fmt.Println("Worker", workerID, "started")
+	for line := range lines {
+		strNumber := ""
 
-		line := scanner.Text()
 		for _, v := range line {
 			if byte(v) >= byte('0') && byte(v) <= byte('9') {
 				strNumber += string(v)
@@ -47,15 +70,23 @@ func main() {
 			}
 		}
 
-		counter += num
+		processedLines <- num
+	}
+}
+
+func readLines(filePath string, output chan<- string) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		fmt.Println("Error opening file:", err)
+		return
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text()
+		output <- line
 	}
 
-	if err := scanner.Err(); err != nil {
-		log.Fatal(err)
-	}
-
-	end := time.Now()
-
-	fmt.Println("Counter:", counter)
-	fmt.Println("Execution time: ", end.Sub(start))
+	close(output)
 }
