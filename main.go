@@ -23,7 +23,9 @@ func main() {
 		fmt.Println("error getting working directory:", err)
 		return
 	}
+
 	scratcherFolderPath := fmt.Sprintf("%s/%s", dir, folderName)
+	inputFilePath := scratcherFolderPath + "/" + inputFileName
 
 	// Check if the folder already exists
 	if _, err := os.Stat(scratcherFolderPath); err == nil {
@@ -39,7 +41,7 @@ func main() {
 
 		// Create the main.go file and write the code
 		filePath := scratcherFolderPath + "/" + mainFileName
-		if err := os.WriteFile(filePath, []byte(mainCode(folderName, inputFileName)), os.ModePerm); err != nil {
+		if err := os.WriteFile(filePath, []byte(mainCode(folderName, inputFilePath)), os.ModePerm); err != nil {
 			fmt.Printf("error creating %s: %v\n", mainFileName, err)
 			return
 		}
