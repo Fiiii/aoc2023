@@ -1,7 +1,7 @@
 package main
 
 import (
-	"bufio"
+	"aoc2023/utils"
 	"fmt"
 	"log"
 	"os"
@@ -40,7 +40,7 @@ func main() {
 	lines := make(chan string)
 	processedLines := make(chan int)
 	var wg sync.WaitGroup
-	go readLines(inputFilePath, lines)
+	go utils.ReadLines(inputFilePath, lines)
 
 	workers := 10
 	wg.Add(workers)
@@ -132,23 +132,6 @@ func processLines(lines <-chan string, processedLines chan<- int, wg *sync.WaitG
 
 		processedLines <- num
 	}
-}
-
-func readLines(filePath string, output chan<- string) {
-	file, err := os.Open(filePath)
-	if err != nil {
-		fmt.Println("Error opening file:", err)
-		return
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		line := scanner.Text()
-		output <- line
-	}
-
-	close(output)
 }
 
 func reverseStr(str string) string {
