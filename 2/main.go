@@ -43,8 +43,7 @@ func main() {
 	var wg sync.WaitGroup
 	go utils.ReadLines(inputFilePath, lines)
 
-	// workers == number of lines to process
-	workers := 1
+	workers := 100
 	wg.Add(workers)
 
 	for i := 0; i < workers; i++ {
